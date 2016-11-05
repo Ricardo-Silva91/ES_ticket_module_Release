@@ -1,1 +1,24 @@
-[{"type":"A","queue":[],"last_ticket":0}]
+[
+  {
+    "type": "A",
+    "queue": [
+      {
+        "ticket_number": 2,
+        "request_timestamp": 1478103427683,
+        "ticket_UUID": "C3C72F79"
+      }
+    ],
+    "last_ticket": 2
+  },
+  {
+    "type": "B",
+    "queue": [
+      {
+        "ticket_number": 1,
+        "request_timestamp": 1478104251002,
+        "ticket_UUID": "2"
+      }
+    ],
+    "last_ticket": 1
+  }
+]
