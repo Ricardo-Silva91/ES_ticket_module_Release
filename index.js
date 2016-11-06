@@ -204,10 +204,8 @@ app.get('/employee/nextTicket', function (req, res) {
 
 });
 
-
-app.get('/everyQueue', function (req, res) {
-    console.log('everyQueue - entered');
-    //var ticket_type = req.query.ticket_type;
+app.get('/employee/everyNextTicket', function (req, res) {
+    console.log('employee everyNextTicket - entered');
     var filesPath = [ticket_queue_path];
 
 
@@ -219,12 +217,62 @@ app.get('/everyQueue', function (req, res) {
         //var queues = data;
 
         var dump_queues = JSON.parse("[]");
+        var next_ticket = ticket_brief_template;
 
         for (var i = 0; i < queues.length; i++) {
-                console.log('everyQueue - queue ' + i + 'type ' + queues[i]["type"]);
+            next_ticket = ticket_brief_template;
+
+            if(queues[i]['queue'].length > 0)
+            {
                 dump_queues[i] = JSON.parse("{}");
-                dump_queues[i]['queue'] = queues[i]['queue'];
+                dump_queues[i]['ticket_number'] = queues[i]['queue'][0]['ticket_number'];
                 dump_queues[i]['type'] = queues[i]['type'];
+
+            }
+        }
+
+        if(dump_queues.length != 0)
+        {
+            res.status(200).json(dump_queues);
+        }
+        else
+        {
+            console.log('employee everyNextTicket - no next tickets');
+            var error_resp = error_template;
+            error_resp['code'] = 410;
+            error_resp['message'] = "Gone - no next ticket in any queue";
+            error_resp['fields'] = "none";
+            console.log(error_resp);
+            res.status(400).json(error_resp);
+        }
+
+    });
+
+});
+
+
+app.get('/everyQueue', function (req, res) {
+    console.log('everyQueue - entered');
+    //var ticket_type = req.query.ticket_type;
+    var filesPath = [ticket_queue_path, average_time_path];
+
+
+    async.map(filesPath, function (filePath, cb) { //reading files or dir
+        fs.readFile(filePath, 'utf8', cb);
+    }, function (err, results) {
+        //console.log(data[0]['type'])
+        var queues = JSON.parse(results[0]);
+        var avg_times = JSON.parse(results[1]);
+        //var queues = data;
+
+        var dump_queues = JSON.parse("[]");
+
+        for (var i = 0; i < queues.length; i++) {
+            console.log('everyQueue - queue ' + i + 'type ' + queues[i]["type"]);
+            dump_queues[i] = JSON.parse("{}");
+            dump_queues[i]['queue'] = queues[i]['queue'];
+            dump_queues[i]['type'] = queues[i]['type'];
+            dump_queues[i]['queue_average_time'] = avg_times[i]['current_average_time'];
 
 
         }
@@ -351,6 +399,9 @@ app.get('/client/remainingTime', function (req, res) {
                     console.log('number of tickets in between: %d', ticket_pos + 1);
 
                     var date = new Date(time_remaining);
+                    //console.log('date: ' + date);
+                    //console.log('tr: ' + time_remaining);
+
 
                     var result = remaining_time_res_template;
 
@@ -395,6 +446,90 @@ app.get('/client/remainingTime', function (req, res) {
     });
 });
 
+/*
+ app.get('/client/remainingTime_withUUID', function (req, res) {
+ console.log('client remainingTime_withUUID - entered');
+ var ticket_number = req.query.ticket_number;
+ var ticket_type = req.query.ticket_type;
+ var filesPath = [ticket_queue_path, average_time_path];
+
+ async.map(filesPath, function (filePath, cb) { //reading files or dir
+ fs.readFile(filePath, 'utf8', cb);
+ }, function (err, results) {
+ //console.log(data[0]['type'])
+ var queues = JSON.parse(results[0]);
+ var average_times = JSON.parse(results[1]);
+
+ if (ticket_type != null && ticket_number != null) {
+
+ console.log('client remainingTime_withUUID - searching ticket type (%s) queue', ticket_type);
+
+ queue_pos = -1;
+
+ for (var i = 0; i < queues.length; i++) {
+ if (queues[i]['type'] == ticket_type) {
+ console.log('client remainingTime_withUUID - found ticket type queue');
+ var queue_pos = i;
+ break;
+ }
+ }
+
+ if (queue_pos != -1 && average_times[queue_pos]['current_average_time'] > 0) {
+
+ console.log('client remainingTime_withUUID - counting tickets before');
+
+ var ticket_pos = findTicketInQueue(queues[queue_pos]['queue'], ticket_number);
+
+ if (ticket_pos != -1) {
+ var average_time_for_queue = average_times[queue_pos]['current_average_time'];
+ var time_remaining = average_time_for_queue * (ticket_pos + 1);
+ console.log('number of tickets in between: %d', ticket_pos + 1);
+
+ var date = new Date(time_remaining);
+
+ var result = remaining_time_res_template;
+
+ result['remaining_time'] = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+ //result['remaining_time'] = time_remaining.getHours();
+ //console.log(JSON.stringify(result));
+ res.status(200).json(result);
+ }
+ else {
+ console.log('client remainingTime_withUUID - bogus ticket number');
+ var error_resp = error_template;
+ error_resp['code'] = 400;
+ error_resp['message'] = "bad request - wrong ticket number or type";
+ error_resp['fields'] = "ticket_type or ticket_number";
+ //console.log(error_resp);
+ res.status(400).json(error_resp);
+ }
+
+ }
+ else {
+ console.log('client remainingTime_withUUID - bad request (queue not found or service not ready)');
+ var error_resp = error_template;
+ error_resp['code'] = 400;
+ error_resp['message'] = "bad request - queue not found or service not ready";
+ error_resp['fields'] = "ticket_type";
+ //console.log(error_resp);
+ res.status(400).json(error_resp);
+ }
+
+ }
+ else {
+ console.log('client remainingTime_withUUID - bad request (no ticket type parameter)');
+ var error_resp = error_template;
+ error_resp['code'] = 400;
+ error_resp['message'] = "bad request - missing ticket type";
+ error_resp['fields'] = "ticket_type";
+ //console.log(error_resp);
+ res.status(400).json(error_resp);
+
+ }
+
+ });
+ });
+ */
 
 /**** POST methods ****/
 
@@ -768,6 +903,7 @@ app.post('/client/cancelTicket', function (req, res) {
                     dump_queues[i] = JSON.parse("{}");
                     dump_queues[i]['queue'] = queues[i]['queue'];
                     dump_queues[i]['type'] = queues[i]['type'];
+                    dump_queues[i]['queue_average_time'] = average_times[i]['current_average_time'];
 
 
                 }
